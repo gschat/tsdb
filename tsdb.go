@@ -2,20 +2,36 @@ package tsdb
 
 // DataSource .
 type DataSource interface {
-	// Open open ts database
-	Open(name string)
 	// Update update key's value or create new one
 	Update(key string, data []byte) error
-	// After get key's version values
+	// Query get key's version values
 	Query(key string, version uint64) (DataSet, error)
-	// LastVersion get value's last version
-	LastVersion(key string) (version uint64, err error)
 	// Close close data source
 	Close()
 }
 
 // DataSet .
 type DataSet interface {
+	MiniVersion() uint64
 	Next() (data []byte, version uint64)
 	Close()
+}
+
+// SEQIDGen .
+type SEQIDGen interface {
+	Close()
+	SQID(key string) (uint64, error)
+}
+
+// Persistence .
+type Persistence interface {
+	Close()
+	Storage(key string) (Storage, error)
+}
+
+// Storage .
+type Storage interface {
+	Close()
+	Write(val *DBValue) error
+	Read(version uint64) (*DBValue, bool)
 }
