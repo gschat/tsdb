@@ -1,8 +1,10 @@
 package test
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gschat/tsdb"
 )
