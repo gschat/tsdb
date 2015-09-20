@@ -1,10 +1,8 @@
 package test
 
 import (
-	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/gschat/tsdb"
 )
@@ -73,6 +71,7 @@ func TestCreateKey(t *testing.T) {
 	}
 }
 
+//
 func BenchmarkUpdate(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		err := db.Update("tsdb.-1", []byte("hello world"))

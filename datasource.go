@@ -50,7 +50,6 @@ func Open(filepath string) (DataSource, error) {
 }
 
 func (datasource *_DataSource) Update(key string, data []byte) error {
-
 	storage, err := datasource.Storage(key)
 
 	if err != nil {
@@ -60,7 +59,7 @@ func (datasource *_DataSource) Update(key string, data []byte) error {
 	id, err := datasource.SQID(key)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	val := &DBValue{id, data}

@@ -3,21 +3,22 @@ package tsdb
 import (
 	"encoding/binary"
 	"path/filepath"
+	"sync"
 
-	"github.com/boltdb/bolt"
-	"github.com/gsdocker/gserrors"
 	"github.com/gsdocker/gslogger"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // _SEQIDGen the metadata storage database which is a wrapper of boltdb
 type _SEQIDGen struct {
+	sync.Mutex
 	gslogger.Log
-	db *bolt.DB // bolt metadata db
+	db *leveldb.DB // bolt metadata db
 }
 
 func newSEQIDGen(dir string) (*_SEQIDGen, error) {
 
-	db, err := bolt.Open(filepath.Join(dir, "id.db"), 0600, nil)
+	db, err := leveldb.OpenFile(filepath.Join(dir, "id.db"), nil)
 
 	if err != nil {
 		return nil, err
@@ -30,29 +31,26 @@ func newSEQIDGen(dir string) (*_SEQIDGen, error) {
 }
 
 // SQID generate new SQID for current key
-func (gen *_SEQIDGen) SQID(key string) (id uint64, err error) {
+func (gen *_SEQIDGen) SQID(key string) (uint64, error) {
 
-	err = gen.db.Update(func(tx *bolt.Tx) error {
+	gen.Lock()
+	defer gen.Unlock()
 
-		bucket, err := tx.CreateBucketIfNotExists([]byte(strSQID))
-		if err != nil {
-			return gserrors.Newf(err, "create bucket storage error")
-		}
+	buff, err := gen.db.Get([]byte(key), nil)
 
-		val := bucket.Get([]byte(key))
+	if err != nil && leveldb.ErrNotFound != err {
+		return 0, err
+	}
 
-		if val != nil {
-			id = binary.BigEndian.Uint64(val) + 1
-		}
+	var id uint64
 
-		val = make([]byte, 64)
+	if buff != nil {
+		id = binary.BigEndian.Uint64(buff) + 1
+	}
 
-		binary.BigEndian.PutUint64(val, id)
+	buff = make([]byte, 64)
 
-		return bucket.Put([]byte(key), val)
-	})
-
-	return
+	return id, gen.db.Put([]byte(key), buff, nil)
 
 }
 

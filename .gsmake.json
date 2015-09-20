@@ -11,7 +11,8 @@
         {"name" : "github.com/gsdocker/gserrors","domain":"golang","version":"v2.0"},
         {"name" : "github.com/gsdocker/gsconfig","domain":"golang","version":"v2.0"},
         {"name" : "github.com/gsdocker/gslogger","domain":"golang","version":"v2.0"},
-        {"name" : "github.com/boltdb/bolt","domain":"golang","version":"master"}
+        {"name" : "github.com/syndtr/goleveldb","domain":"golang","version":"master"},
+        {"name" : "github.com/golang/snappy","domain":"golang","version":"master"}
     ],
 
     "properties":{

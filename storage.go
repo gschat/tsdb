@@ -6,29 +6,29 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/boltdb/bolt"
 	"github.com/gsdocker/gsconfig"
 	"github.com/gsdocker/gserrors"
 	"github.com/gsdocker/gslogger"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type _Storage struct {
-	gslogger.Log          // Mixin logger
-	db           *bolt.DB // bolt db
-	key          string   // storage key
-	valen        int      // value length
+	gslogger.Log             // Mixin logger
+	db           *leveldb.DB // bolt db
+	key          string      // storage key
+	valen        int         // value length
 }
 
 type _DB struct {
 	gslogger.Log                    // Mixin logger
 	sync.RWMutex                    // mixin mutex
-	db           *bolt.DB           // bolt  db
+	db           *leveldb.DB        // bolt  db
 	storages     map[string]Storage // storages
 	valen        int                /// max cached message
 }
 
 func newDB(dir string) (Persistence, error) {
-	db, err := bolt.Open(filepath.Join(dir, "keyspace.db"), 0600, nil)
+	db, err := leveldb.OpenFile(filepath.Join(dir, "keyspace.db"), nil)
 
 	if err != nil {
 		return nil, err
@@ -85,46 +85,34 @@ func (storage *_Storage) Write(val *DBValue) error {
 		return err
 	}
 
-	return storage.db.Update(func(tx *bolt.Tx) error {
+	key := fmt.Sprintf("%s:%d", storage.key, val.ID%uint64(storage.valen))
 
-		bucket, err := tx.CreateBucketIfNotExists([]byte(strValSpace))
-		if err != nil {
-			return gserrors.Newf(err, "create ValSpace bucket error")
-		}
-
-		return bucket.Put([]byte(fmt.Sprintf("%s:%d", storage.key, val.ID%uint64(storage.valen))), buff.Bytes())
-	})
+	return storage.db.Put([]byte(key), buff.Bytes(), nil)
 }
 func (storage *_Storage) Read(version uint64) (val *DBValue, ok bool) {
 
-	storage.db.View(func(tx *bolt.Tx) error {
+	key := fmt.Sprintf("%s:%d", storage.key, version%uint64(storage.valen))
 
-		bucket := tx.Bucket([]byte(strValSpace))
-		if bucket == nil {
-			return nil
+	buff, err := storage.db.Get([]byte(key), nil)
+
+	if err != nil {
+		if err != leveldb.ErrNotFound {
+			storage.E("get %s -> value \n%s", key, gserrors.Newf(err, ""))
 		}
+		
+		return nil, false
+	}
 
-		key := fmt.Sprintf("%s:%d", storage.key, version%uint64(storage.valen))
+	if buff == nil {
+		return nil, false
+	}
 
-		buff := bucket.Get([]byte(key))
+	val, err = ReadDBValue(bytes.NewBuffer(buff))
 
-		if buff == nil {
-			return nil
-		}
+	if err != nil {
+		storage.E("unmarshal %s -> %s error\n%s", key, buff, err)
+		return nil, false
+	}
 
-		var err error
-
-		val, err = ReadDBValue(bytes.NewBuffer(buff))
-
-		if err != nil {
-			storage.E("unmarshal %s -> %s error\n%s", key, buff, err)
-			return err
-		}
-
-		ok = true
-
-		return nil
-	})
-
-	return
+	return val, true
 }
