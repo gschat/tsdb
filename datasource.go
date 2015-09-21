@@ -22,7 +22,7 @@ type _DataSource struct {
 func Open(filepath string) (DataSource, error) {
 
 	if !fs.Exists(filepath) {
-		err := os.MkdirAll(filepath, 0644)
+		err := os.MkdirAll(filepath, 0777)
 		if err != nil {
 			return nil, err
 		}
