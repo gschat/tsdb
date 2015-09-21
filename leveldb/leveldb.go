@@ -36,6 +36,8 @@ var c = flag.Int("c", 20000, "simulator clients")
 
 var t = flag.Duration("t", 10*time.Millisecond, "update timeout")
 
+var m = flag.String("m", "hello world", "update messages")
+
 var counter uint64
 
 var timestamp = time.Now()
@@ -47,7 +49,7 @@ func main() {
 		key := fmt.Sprintf("key%d", i)
 		go func() {
 			for _ = range time.Tick(*t) {
-				err := db.Put([]byte(key), []byte("hello world"), nil)
+				err := db.Put([]byte(key), []byte(*m), nil)
 
 				atomic.AddUint64(&counter, 1)
 
