@@ -47,6 +47,9 @@ var counter uint64
 var timestamp = time.Now()
 
 func main() {
+
+	flag.Parse()
+
 	log := gslogger.Get("bench")
 
 	for i := 0; i < *c; i++ {
