@@ -28,14 +28,15 @@ func main() {
 	log := gslogger.Get("bench")
 	ip := "127.0.0.1"
 	port := 8888
-	db, err := ssdb.Connect(ip, port)
-	if err != nil {
-		log.E("connect ssdb error :%s", err)
-	}
 
 	for i := 0; i < *c; i++ {
 		key := fmt.Sprintf("key%d", i)
 		go func() {
+			db, err := ssdb.Connect(ip, port)
+			if err != nil {
+				log.E("connect ssdb error :%s", err)
+			}
+
 			for _ = range time.Tick(*t) {
 				_, err := db.Set(key, *m)
 
