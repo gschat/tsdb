@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/gsdocker/gslogger"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/jmhodges/levigo"
 )
 
 const (
 	dbname = "./test"
 )
 
-var db *leveldb.DB
+var db *levigo.DB
 
 func init() {
 	err := os.RemoveAll(dbname)
@@ -24,7 +24,11 @@ func init() {
 		panic(err)
 	}
 
-	db, err = leveldb.OpenFile(dbname, nil)
+	opts := levigo.NewOptions()
+	opts.SetCache(levigo.NewLRUCache(3 << 30))
+	opts.SetCreateIfMissing(true)
+
+	db, err = levigo.Open(dbname, opts)
 
 	if err != nil {
 		panic(err)
@@ -48,8 +52,10 @@ func main() {
 	for i := 0; i < *c; i++ {
 		key := fmt.Sprintf("key%d", i)
 		go func() {
+			wo := levigo.NewWriteOptions()
+
 			for _ = range time.Tick(*t) {
-				err := db.Put([]byte(key), []byte(*m), nil)
+				err := db.Put(wo, []byte(key), []byte(*m))
 
 				atomic.AddUint64(&counter, 1)
 
