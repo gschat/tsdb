@@ -12,13 +12,15 @@
         {"name" : "github.com/gsdocker/gsconfig","domain":"golang","version":"v2.0"},
         {"name" : "github.com/gsdocker/gslogger","domain":"golang","version":"v2.0"},
         {"name" : "github.com/syndtr/goleveldb","domain":"golang","version":"master"},
-        {"name" : "github.com/golang/snappy","domain":"golang","version":"master"}
+        {"name" : "github.com/golang/snappy","domain":"golang","version":"master"},
+        {"name" : "github.com/ssdb/gossdb","domain":"golang","version":"master"}
     ],
 
     "properties":{
 
         "gsmake.golang.binary" :{
-              "leveldb-bench" : "leveldb"
+              "leveldb-bench" : "leveldb",
+              "ssdb-bench" : "ssdb"
         },
 
         "gsrpc":{
