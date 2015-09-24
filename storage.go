@@ -65,11 +65,17 @@ func (db *_DB) Write(name string, val *DBValue) error {
 	return db.db.Put(db.writeOpts, []byte(key), buff.Bytes())
 }
 
+func (db *_DB) read(key string) ([]byte, error) {
+	db.Lock()
+	defer db.Unlock()
+	return db.db.Get(db.readOpts, []byte(key))
+}
+
 func (db *_DB) Read(name string, version uint64) (val *DBValue, ok bool) {
 
 	key := fmt.Sprintf("%s:%d", name, version%uint64(db.valen))
 
-	buff, err := db.db.Get(db.readOpts, []byte(key))
+	buff, err := db.read(key)
 
 	if err != nil {
 		db.E("get %s -> value \n%s", key, gserrors.Newf(err, ""))

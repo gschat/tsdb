@@ -38,6 +38,24 @@ func newSEQIDGen(dir string) (*_SEQIDGen, error) {
 	}, nil
 }
 
+func (gen *_SEQIDGen) Current(key string) (uint64, bool) {
+	gen.Lock()
+	defer gen.Unlock()
+
+	buff, err := gen.db.Get(gen.readOpts, []byte(key))
+
+	if err != nil {
+		return 0, false
+	}
+
+	if buff != nil {
+		id := binary.BigEndian.Uint64(buff)
+		return id, true
+	}
+
+	return 0, false
+}
+
 // SQID generate new SQID for current key
 func (gen *_SEQIDGen) SQID(key string) (uint64, error) {
 

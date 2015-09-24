@@ -92,6 +92,10 @@ func (datasource *_DataSource) Query(key string, version uint64) (DataSet, error
 	return datasource.makeDataSet(key, datasource, cached, version), nil
 }
 
+func (datasource *_DataSource) CurrentVersion(key string) (uint64, bool) {
+	return datasource.Current(key)
+}
+
 func (datasource *_DataSource) Close() {
 	datasource.SEQIDGen.Close()
 	datasource.Storage.Close()

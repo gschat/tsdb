@@ -8,18 +8,21 @@ type DataSource interface {
 	Query(key string, version uint64) (DataSet, error)
 	// Close close data source
 	Close()
+	// get value version of key
+	CurrentVersion(key string) (uint64, bool)
 }
 
 // DataSet .
 type DataSet interface {
 	MiniVersion() uint64
-	Next() (data []byte, version uint64)
+	Stream() <-chan *DBValue
 	Close()
 }
 
 // SEQIDGen .
 type SEQIDGen interface {
 	Close()
+	Current(key string) (uint64, bool)
 	SQID(key string) (uint64, error)
 }
 
