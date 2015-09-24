@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -46,6 +47,8 @@ var counter uint64
 
 var timestamp = time.Now()
 
+var locker sync.Mutex
+
 func main() {
 
 	flag.Parse()
@@ -58,7 +61,9 @@ func main() {
 			wo := levigo.NewWriteOptions()
 
 			for _ = range time.Tick(*t) {
+				locker.Lock()
 				err := db.Put(wo, []byte(key), []byte(*m))
+				locker.Unlock()
 
 				atomic.AddUint64(&counter, 1)
 
