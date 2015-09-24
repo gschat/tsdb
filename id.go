@@ -6,27 +6,35 @@ import (
 	"sync"
 
 	"github.com/gsdocker/gslogger"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/jmhodges/levigo"
 )
 
 // _SEQIDGen the metadata storage database which is a wrapper of boltdb
 type _SEQIDGen struct {
 	sync.Mutex
 	gslogger.Log
-	db *leveldb.DB // bolt metadata db
+	db        *levigo.DB           // bolt metadata db
+	writeOpts *levigo.WriteOptions // write options
+	readOpts  *levigo.ReadOptions  // read options
 }
 
 func newSEQIDGen(dir string) (*_SEQIDGen, error) {
 
-	db, err := leveldb.OpenFile(filepath.Join(dir, "id.db"), nil)
+	opts := levigo.NewOptions()
+	opts.SetCache(levigo.NewLRUCache(3 << 30))
+	opts.SetCreateIfMissing(true)
+
+	db, err := levigo.Open(filepath.Join(dir, "id.db"), opts)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &_SEQIDGen{
-		Log: gslogger.Get("tsdb-id"),
-		db:  db,
+		Log:       gslogger.Get("tsdb-id"),
+		db:        db,
+		writeOpts: levigo.NewWriteOptions(),
+		readOpts:  levigo.NewReadOptions(),
 	}, nil
 }
 
@@ -36,9 +44,9 @@ func (gen *_SEQIDGen) SQID(key string) (uint64, error) {
 	gen.Lock()
 	defer gen.Unlock()
 
-	buff, err := gen.db.Get([]byte(key), nil)
+	buff, err := gen.db.Get(gen.readOpts, []byte(key))
 
-	if err != nil && leveldb.ErrNotFound != err {
+	if err != nil {
 		return 0, err
 	}
 
@@ -50,7 +58,7 @@ func (gen *_SEQIDGen) SQID(key string) (uint64, error) {
 
 	buff = make([]byte, 64)
 
-	return id, gen.db.Put([]byte(key), buff, nil)
+	return id, gen.db.Put(gen.writeOpts, []byte(key), buff)
 
 }
 

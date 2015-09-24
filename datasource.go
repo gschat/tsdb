@@ -13,7 +13,7 @@ type _DataSource struct {
 	gslogger.Log                     // Mixin Log
 	sync.RWMutex                     // Mixin mutex
 	SEQIDGen                         // Mixin seq id gen service
-	Persistence                      // Mixin persistence service
+	Storage                          // Mixin persistence service
 	cached       map[string]*_Cached // L1 cached
 	cachedsize   int                 // cache size
 }
@@ -34,27 +34,22 @@ func Open(filepath string) (DataSource, error) {
 		return nil, err
 	}
 
-	persistence, err := newDB(filepath)
+	storage, err := newDB(filepath)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &_DataSource{
-		Log:         gslogger.Get("tsdb"),
-		SEQIDGen:    idgen,
-		Persistence: persistence,
-		cached:      make(map[string]*_Cached),
-		cachedsize:  gsconfig.Int("tsdb.cached.size", 1024),
+		Log:        gslogger.Get("tsdb"),
+		SEQIDGen:   idgen,
+		Storage:    storage,
+		cached:     make(map[string]*_Cached),
+		cachedsize: gsconfig.Int("tsdb.cached.size", 1024),
 	}, nil
 }
 
 func (datasource *_DataSource) Update(key string, data []byte) error {
-	storage, err := datasource.Storage(key)
-
-	if err != nil {
-		return nil
-	}
 
 	id, err := datasource.SQID(key)
 
@@ -64,7 +59,7 @@ func (datasource *_DataSource) Update(key string, data []byte) error {
 
 	val := &DBValue{id, data}
 
-	err = storage.Write(val)
+	err = datasource.Write(key, val)
 
 	if err != nil {
 		return err
@@ -82,12 +77,6 @@ func (datasource *_DataSource) Update(key string, data []byte) error {
 
 func (datasource *_DataSource) Query(key string, version uint64) (DataSet, error) {
 
-	storage, err := datasource.Storage(key)
-
-	if err != nil {
-		return nil, nil
-	}
-
 	datasource.Lock()
 	defer datasource.Unlock()
 
@@ -100,10 +89,10 @@ func (datasource *_DataSource) Query(key string, version uint64) (DataSet, error
 		datasource.cached[key] = cached
 	}
 
-	return datasource.makeDataSet(storage, cached, version), nil
+	return datasource.makeDataSet(key, datasource, cached, version), nil
 }
 
 func (datasource *_DataSource) Close() {
 	datasource.SEQIDGen.Close()
-	datasource.Persistence.Close()
+	datasource.Storage.Close()
 }

@@ -20,9 +20,10 @@ type _DataSet struct {
 	cursor      uint64        // current read cursor
 	Q           chan *DBValue // dataset queue
 	closed      chan bool     // closed flag
+	key         string        // key string
 }
 
-func (datasource *_DataSource) makeDataSet(storage Storage, cached *_Cached, miniVersion uint64) DataSet {
+func (datasource *_DataSource) makeDataSet(key string, storage Storage, cached *_Cached, miniVersion uint64) DataSet {
 	dataset := &_DataSet{
 		storage:     storage,
 		cached:      cached,
@@ -30,6 +31,7 @@ func (datasource *_DataSource) makeDataSet(storage Storage, cached *_Cached, min
 		cursor:      miniVersion,
 		Q:           make(chan *DBValue),
 		closed:      make(chan bool),
+		key:         key,
 	}
 
 	go dataset.readLoop()
@@ -47,7 +49,7 @@ func (dataset *_DataSet) readLoop() {
 		val, ok := dataset.cached.Get(dataset.cursor)
 
 		if !ok {
-			val, ok = dataset.storage.Read(dataset.cursor)
+			val, ok = dataset.storage.Read(dataset.key, dataset.cursor)
 			if !ok {
 				timer.Reset(timeout)
 				select {

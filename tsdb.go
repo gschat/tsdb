@@ -23,15 +23,9 @@ type SEQIDGen interface {
 	SQID(key string) (uint64, error)
 }
 
-// Persistence .
-type Persistence interface {
-	Close()
-	Storage(key string) (Storage, error)
-}
-
 // Storage .
 type Storage interface {
 	Close()
-	Write(val *DBValue) error
-	Read(version uint64) (*DBValue, bool)
+	Write(key string, val *DBValue) error
+	Read(key string, version uint64) (*DBValue, bool)
 }
