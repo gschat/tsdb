@@ -1,8 +1,8 @@
 package com.gschat.tsdb;
 
-using gslang.Lang;
+using gslang.Package;
 
-@Lang(Name:"golang",Package:"github.com/gschat/tsdb")
+@Package(Lang:"golang",Name:"com.gschat.tsdb",Redirect:"github.com/gschat/tsdb")
 
 table DBValue {
     uint64 ID;
